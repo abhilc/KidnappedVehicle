@@ -23,6 +23,7 @@ using std::string;
 using std::vector;
 using std::normal_distribution;
 
+
 void ParticleFilter::init(double x, double y, double theta, double std[]) {
   /**
    * TODO: Set the number of particles. Initialize all particles to 
@@ -33,7 +34,7 @@ void ParticleFilter::init(double x, double y, double theta, double std[]) {
    *   (and others in this file).
    */
   
-  num_particles = 1000;  // TODO: Set the number of particles
+  num_particles = 750;  // TODO: Set the number of particles
   std::default_random_engine gen;
   normal_distribution<double> dist_x(x, std[0]);
   normal_distribution<double> dist_y(y, std[1]);
@@ -46,6 +47,7 @@ void ParticleFilter::init(double x, double y, double theta, double std[]) {
   sample_y = dist_y(gen);
   sample_theta = dist_theta(gen);
   
+
   for(int i=0;i<num_particles;i++)
   {
     //Create a Particle P
@@ -62,6 +64,7 @@ void ParticleFilter::init(double x, double y, double theta, double std[]) {
   is_initialized = true; 
   
 }
+
 
 
 void ParticleFilter::prediction(double delta_t, double std_pos[], 
@@ -100,9 +103,11 @@ void ParticleFilter::prediction(double delta_t, double std_pos[],
       else
       {
         //Predict with yaw_rate
-        x_pred = x + v/ydot * (sin(theta + ydot * delta_t) - sin(theta));
-        y_pred = y + v/ydot * (cos(theta) - cos(theta + ydot * delta_t));
-        theta_pred = theta + ydot * delta_t;
+        double v_div_yawrate = velocity/yaw_rate;
+        double delta_t_times_yaw_rate = yaw_rate * delta_t;
+        x_pred = x + v_div_yawrate * (sin(theta + delta_t_times_yaw_rate) - sin(theta));
+        y_pred = y + v_div_yawrate * (cos(theta) - cos(theta + delta_t_times_yaw_rate));
+        theta_pred = theta + delta_t_times_yaw_rate;
       }
       
       particles[i].x = x_pred + dist_x(gen);
@@ -112,6 +117,7 @@ void ParticleFilter::prediction(double delta_t, double std_pos[],
   
 
 }
+
 
 void ParticleFilter::dataAssociation(vector<LandmarkObs> predicted, 
                                      vector<LandmarkObs>& observations) {
@@ -143,6 +149,9 @@ void ParticleFilter::dataAssociation(vector<LandmarkObs> predicted,
 
 }
 
+
+
+
 void ParticleFilter::updateWeights(double sensor_range, double std_landmark[], 
                                    const vector<LandmarkObs> &observations, 
                                    const Map &map_landmarks) {
@@ -162,10 +171,13 @@ void ParticleFilter::updateWeights(double sensor_range, double std_landmark[],
   */  
   
   
+  
   //Part I. Translation of co-ordinate system(Vehicle to Map)
+  
+  
   for(int j=0;j<particles.size();j++)
   {
-    Particle p = particles[j];
+    Particle const &p = particles[j];
     
     
     /**
@@ -202,8 +214,10 @@ void ParticleFilter::updateWeights(double sensor_range, double std_landmark[],
     for (auto i = 0; i < observations.size(); i++) {
       
       LandmarkObs observation = observations[i];
-      transformed_observations[i].x = p.x + cos(p.theta) * observation.x - sin(p.theta) * observation.y;
-      transformed_observations[i].y = p.y + sin(p.theta) * observation.x + cos(p.theta) * observation.y;
+      double cos_theta = cos(p.theta);
+      double sin_theta = sin(p.theta);
+      transformed_observations[i].x = p.x + cos_theta * observation.x - sin_theta * observation.y;
+      transformed_observations[i].y = p.y + sin_theta * observation.x + cos_theta * observation.y;
       transformed_observations[i].id = -1;
     }
 
@@ -211,7 +225,7 @@ void ParticleFilter::updateWeights(double sensor_range, double std_landmark[],
     dataAssociation(landmarks, transformed_observations);
     
     vector<double> observation_probabilities(transformed_observations.size());
-    p.weight = 1.0;  
+    particles[j].weight = 1.0;  
     
     for (auto i = 0; i < observations.size(); i++) {
       LandmarkObs tobs = transformed_observations[i];
@@ -231,11 +245,14 @@ void ParticleFilter::updateWeights(double sensor_range, double std_landmark[],
                                      exp(-(x_diff_2 / (2 * std_x_2) + y_diff_2 / (2 * std_y_2)));
 
       
-      p.weight *= observation_probabilities[i];
+      particles[j].weight *= observation_probabilities[i];
     }
-    weights[j] = p.weight;
+    weights[j] = particles[j].weight;
   }
+  
 }
+
+
 
 void ParticleFilter::resample() {
   /**
