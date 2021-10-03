@@ -123,7 +123,7 @@ int main() {
               highest_weight = particles[i].weight;
               best_particle = particles[i];
             }
-
+            //std::cout << "Weight of particle i: " << i << " : " << particles[i].weight << std::endl;
             weight_sum += particles[i].weight;
           }
 
