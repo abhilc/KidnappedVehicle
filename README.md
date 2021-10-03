@@ -1,6 +1,55 @@
 # Overview
 This repository contains all the code needed to complete the final project for the Localization course in Udacity's Self-Driving Car Nanodegree.
 
+## Project Introduction
+In this implementation, the particle filter is implemented based on the more general Bayesian Filter mechanisum. 
+
+Goal: The goal of this project is to localize the vehicle since the GPS co-ordinates are not enough to achieve the accuracy needed for a self driving car!
+
+## The Algorithm
+The general principle behind a particle filter is to create particles with some initial pos(location, orientation) in 2D. Apply Bayesian techniques to estimate 
+how important these particles are by assigning "importance weights to them". Finally, the particles with higher importance weights are retained and the lower
+importance weights are discarded. Below steps describe the implementation in detail
+
+Steps of the algorithm are as follows:
+1. Initialization
+2. Prediction(Motion Model)
+3. UpdateWeights
+4. Resampling
+
+The code for all the steps can be found in particle_filter.cpp source file
+
+### Initialization
+1. The number of particles are set. Each particle is initialized with GPS co-ordinates by combining the pos with Guassian Noise
+2. The weights vector for each particle is created and weights is initially assigned to 1 for all particles.
+
+### Prediction
+1. Bycycle Model is used to predict the position of the car given the control inputs. 
+2. The control inputs in this case are the velocity, yaw_rate and the timestamp
+3. Since the control inputs are also subject to uncertainities, guassian noise is added to account for this uncertainity 
+
+### UpdateWeights 
+1. First, the landmarks from the map data are chosen such that they are within the sensor range
+2. The observations from the sensor are in the car co-ordinate system. The co-ordinate transformation from vehicle to Map co-ordinate system
+   for each particle(Because pos of each particle is assumed to be pos of the car, therefore we want to know these observations from the perspective 
+   of the particle under consideration). This is done by translation and rotation. The equations can be found in the implementation. 
+3. DataAssociation: We may recieve multiple observations for a single landmark. Therefore, it is necessary to choose the best observation. This is done
+   using the "Nearest Neighbor" Algorithm, by considering the observation that has the shortest Euclidean Distance to the said landmark. This ID of the found 
+   observation is recorded for later use. 
+4. Finally, the weights of each particle are updated using the "Guassian Multivariate Probability Density Equation". The implementation details can be found in 
+   particle_filter.cpp source file. 
+   
+### Resampling
+1. The particles with higher importance weight are selected, the once with lower inportance weights are rejected.
+2. At the end, the particles vector is assigned back to resampled_particles vector. 
+
+
+## Results 
+The image below shows the particles accurately localizing the vehicle:
+<p>
+    <img src="Output.png"/>
+</p>
+
 #### Submission
 All you will need to submit is your `src` directory. You should probably do a `git pull` before submitting to verify that your project passes the most up-to-date version of the grading code (there are some parameters in `src/main.cpp` which govern the requirements on accuracy and run time).
 
